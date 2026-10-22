@@ -1,0 +1,194 @@
+<h1>L甲鉄城のカバネリ 海門決戦</h1>
+
+<p>総回転数</p>
+<input type="number" id="games">
+<p>初当たり判別モード</p>
+<select id="mode">
+  <option value="bonus">ボーナス初当たり</option>
+  <option value="at">AT初当たり</option>
+  <option value="both">AT＋ボーナス初当たり（両方使用）</option>
+</select>
+<p>AT初当たり回数</p>
+<input type="number" id="at" min="0">
+<p>下段ベル回数</p>
+<input type="number" id="small">
+
+<p>ボーナス初当たり回数</p>
+<input type="number" id="bb">
+<fieldset id="settingHints">
+  <legend>設定確定・示唆演出（複数選択可）</legend>
+  <style>
+#settingHints label {
+  display: block;
+  margin: 8px 0;
+}
+</style>
+ <div id="hintOptions">
+  <h3>サミートロフィー</h3>
+
+  <label><input type="checkbox" class="hint" value="trophy2">銅（設定2以上）</label>
+  <label><input type="checkbox" class="hint" value="trophy3">銀（設定3以上）</label>
+  <label><input type="checkbox" class="hint" value="trophy4">金（設定4以上）</label>
+  <label><input type="checkbox" class="hint" value="trophy5">キリン柄（設定5以上）</label>
+  <label><input type="checkbox" class="hint" value="trophy6">虹（設定6）</label>
+  <h3>アイテムくじ</h3>
+
+<label><input type="checkbox" class="hint" value="kuji2">小吉（設定2以上）</label>
+<label><input type="checkbox" class="hint" value="kuji4">中吉（設定4以上）</label>
+<label><input type="checkbox" class="hint" value="kuji6">大吉（設定6）</label>
+<label><input type="checkbox" class="hint" value="kujiNo23">来栖の刀（設定2・3否定）</label>
+<label><input type="checkbox" class="hint" value="kujiNo13">無名のけん玉（設定1・3否定）</label>
+</div><h3>その他の設定確定演出</h3>
+
+<label><input type="checkbox" class="hint" value="over4">456 OVER（設定4以上）</label>
+<label><input type="checkbox" class="hint" value="over6">666 OVER（設定6）</label>
+<label><input type="checkbox" class="hint" value="swimsuit">ST終了画面・水着（設定6）</label>
+<label><input type="checkbox" class="hint" value="biba">ボーナス中・美馬紹介（設定4以上）</label>
+<label><input type="checkbox" class="hint" value="attack4">カバネリアタック＋44（設定4以上）</label>
+<label><input type="checkbox" class="hint" value="attack5">カバネリアタック＋55（設定5以上）</label>
+<label><input type="checkbox" class="hint" value="attack6">カバネリアタック＋66・＋77（設定6）</label>
+</fieldset>
+<button type="button" id="analyzeButton">設定判別する</button>
+<button type="button" id="clearHints">確定演出のチェックをすべて外す</button>
+
+<p id="bonusRate">ボーナス初当たり確率：未計算</p>
+<p id="atRate">AT初当たり確率：未計算</p>
+<p id="bellRate">下段ベル確率：未計算</p>
+<p id="result"></p>
+
+
+<script>
+document.getElementById("clearHints").onclick = function() {
+  document.querySelectorAll(".hint").forEach(input => {
+    input.checked = false;
+  });
+};
+document.querySelector("button").onclick = function() {
+  const games = Number(document.getElementById("games").value);
+  const small = Number(document.getElementById("small").value);
+  const bb = Number(document.getElementById("bb").value);
+  const at = Number(document.getElementById("at").value);
+  const mode = document.getElementById("mode").value;
+  const selectedHints = Array.from(
+  document.querySelectorAll(".hint:checked")
+).map(input => input.value);
+  document.getElementById("bellRate").textContent =
+  "下段ベル確率： " +
+  (small > 0 ? "1/" + (games / small).toFixed(1) : "当選なし");
+  document.getElementById("atRate").textContent =
+  "AT初当たり確率： " +
+  (at > 0 ? "1/" + (games / at).toFixed(1) : "当選なし");
+const firstHit = bb;
+document.getElementById("bonusRate").textContent =
+  "ボーナス初当たり確率： " +
+  (firstHit > 0 ? "1/" + (games / firstHit).toFixed(1) : "当選なし");
+  const result = document.getElementById("result");
+  if (
+    games <= 0 ||
+![games, small, bb, at].every(Number.isInteger) ||
+[small, bb, at].some(n => n < 0) ||
+small > games || bb > games || at > games
+
+) {
+    result.textContent = "正しい数値を入力してください";
+    return;
+  }
+
+  // 設定別の架空確率（練習用）
+  const atRates = [
+  422.5,
+  405.9,
+  398.7,
+  357.2,
+  332.6,
+  318.5
+];
+  const bellRates = [
+  121.1,
+  114.4,
+  112.8,
+  106.2,
+  104.2,
+  99.1
+];
+ const rates = [
+  [10.5, 254.2, 400, 0.20],
+  [10.3, 242.3, 370, 0.22],
+  [10.1, 239.6, 340, 0.24],
+  [9.9, 214.0, 300, 0.27],
+  [9.7, 203.2, 270, 0.30],
+  [9.5, 195.1, 240, 0.32]
+];
+  function logBinomial(n, k, rate) {
+    const p = 1 / rate;
+    return k * Math.log(p) +
+      (n - k) * Math.log1p(-p);
+  }
+const atScores = atRates.map(rate =>
+  logBinomial(games, at, rate)
+);
+const scores = rates.map(([s, b, r, cz], i) => {
+  const bonusScore = logBinomial(games, firstHit, b);
+
+  const hitScore =
+    mode === "at" ? atScores[i] :
+    mode === "bonus" ? bonusScore :
+    (atScores[i] + bonusScore) / 2;
+
+  return hitScore +
+    logBinomial(games, small, bellRates[i]);
+});
+const hintRules = {
+  trophy2: [2, 3, 4, 5, 6],
+  trophy3: [3, 4, 5, 6],
+  trophy4: [4, 5, 6],
+  trophy5: [5, 6],
+  trophy6: [6],
+
+  kuji2: [2, 3, 4, 5, 6],
+  kuji4: [4, 5, 6],
+  kuji6: [6],
+  kujiNo23: [1, 4, 5, 6],
+  kujiNo13: [2, 4, 5, 6],
+
+  over4: [4, 5, 6],
+  over6: [6],
+  swimsuit: [6],
+  biba: [4, 5, 6],
+  attack4: [4, 5, 6],
+  attack5: [5, 6],
+  attack6: [6]
+};
+
+const allowedSettings = [1, 2, 3, 4, 5, 6].filter(setting =>
+  selectedHints.every(hint =>
+    !hintRules[hint] || hintRules[hint].includes(setting)
+  )
+);
+
+if (allowedSettings.length === 0) {
+  result.textContent = "確定演出の条件が矛盾しています。選択内容を確認してください。";
+  return;
+}
+
+for (let i = 0; i < 6; i++) {
+  if (!allowedSettings.includes(i + 1)) {
+    scores[i] = -Infinity;
+  }
+}
+  const max = Math.max(...scores);
+  const weights = scores.map(s => Math.exp(s - max));
+  const total = weights.reduce((a, b) => a + b, 0);
+
+  result.innerHTML = "";
+
+  weights.forEach((w, i) => {
+    const line = document.createElement("p");
+    line.textContent =
+      `設定${i + 1}：${(w / total * 100).toFixed(2)}%`;
+    result.appendChild(line);
+  });
+};
+</script>
+
+
