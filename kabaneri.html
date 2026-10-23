@@ -1,28 +1,85 @@
 <h1>L甲鉄城のカバネリ 海門決戦</h1>
-
-<p>総回転数</p>
+<p>総ゲーム数</p>
+<input type="number" id="totalGames" min="0">
+<p>通常ゲーム数</p>
 <input type="number" id="games">
+<p>下段ベル回数</p>
+<input type="number" id="small">
+<p>ボーナス初当たり回数</p>
+<input type="number" id="bb">
+<p>AT初当たり回数</p>
+<input type="number" id="at" min="0">
 <p>初当たり判別モード</p>
 <select id="mode">
   <option value="bonus">ボーナス初当たり</option>
   <option value="at">AT初当たり</option>
   <option value="both">AT＋ボーナス初当たり（両方使用）</option>
 </select>
-<p>AT初当たり回数</p>
-<input type="number" id="at" min="0">
-<p>下段ベル回数</p>
-<input type="number" id="small">
+<fieldset>
+  <legend>非高確単チャンス目発光率(無名/生駒)</legend>
 
-<p>ボーナス初当たり回数</p>
-<input type="number" id="bb">
+  <label>
+    単チャンス目成立回数：
+    <input type="number" id="singleChance" min="0" value="0">
+  </label>
+
+  <label>
+    発光回数：
+    <input type="number" id="singleLight" min="0" value="0">
+  </label>
+
+  <p id="singleLightRate">発光率：0.0%</p>
+  <small>※独自推定値を使用</small>
+</fieldset>
+<button type="button" class="analyzeButton">設定判別する</button>
+<div id="topResult"></div>
+<fieldset>
+  <legend>キャラ紹介（0〜5000G）</legend>
+  <style>
+  fieldset label {
+    display: block;
+    margin: 10px 0;
+  }
+</style>
+
+  <label>
+    女性キャラ：
+    <input type="number" id="femaleCount" min="0" value="0">
+  </label>
+
+  <label>
+    男性キャラ：
+<input type="number" id="maleCount" min="0" value="0">
+</label>
+
+<p id="characterRate">女性：0.0% / 男性：0.0%</p>
+</fieldset>
+<fieldset>
+  <legend>復讐の焔 成功時の裏景之ST突入率</legend>
+
+  <label>
+    復讐の焔 成功回数：
+    <input type="number" id="revengeSuccess" min="0" value="0">
+  </label>
+
+  <label>
+    裏景之ST突入回数：
+    <input type="number" id="uraKeiyuki" min="0" value="0">
+  </label>
+
+  <p id="uraRate">裏景之ST突入率：0.0%</p>
+</fieldset>
+
 <fieldset id="settingHints">
   <legend>設定確定・示唆演出（複数選択可）</legend>
+
   <style>
-#settingHints label {
-  display: block;
-  margin: 8px 0;
-}
-</style>
+    #settingHints label {
+      display: block;
+      margin: 8px 0;
+    }
+  </style>
+
  <div id="hintOptions">
   <h3>サミートロフィー</h3>
 
@@ -63,18 +120,56 @@ document.getElementById("clearHints").onclick = function() {
     input.checked = false;
   });
 };
-document.querySelector("button").onclick = function() {
+function analyze(event) {
   const games = Number(document.getElementById("games").value);
+  const totalGames = Number(document.getElementById("totalGames").value);
   const small = Number(document.getElementById("small").value);
   const bb = Number(document.getElementById("bb").value);
   const at = Number(document.getElementById("at").value);
   const mode = document.getElementById("mode").value;
+  const femaleCount = Number(document.getElementById("femaleCount").value);
+const maleCount = Number(document.getElementById("maleCount").value);
+const characterTotal = femaleCount + maleCount;
+
+const femalePercent = characterTotal > 0
+  ? (femaleCount / characterTotal * 100).toFixed(1)
+  : "0.0";
+
+const malePercent = characterTotal > 0
+  ? (maleCount / characterTotal * 100).toFixed(1)
+  : "0.0";
+
+document.getElementById("characterRate").textContent =
+  `女性：${femalePercent}% / 男性：${malePercent}%`;
+const femaleRates = [0.500, 0.575, 0.415, 0.585, 0.399, 0.600];
+const maleRates = [0.500, 0.425, 0.585, 0.414, 0.600, 0.3985];
+const revengeSuccess = Number(document.getElementById("revengeSuccess").value);
+const uraKeiyuki = Number(document.getElementById("uraKeiyuki").value);
+
+const uraRates = [0.062, 0.062, 0.066, 0.109, 0.250, 0.332];
+const singleChance = Number(document.getElementById("singleChance").value);
+const singleLight = Number(document.getElementById("singleLight").value);
+
+// 独自推定値（設定1〜6）
+const singleLightRates = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20];
+const singleLightPercent = singleChance > 0
+  ? (singleLight / singleChance * 100).toFixed(1)
+  : "0.0";
+
+document.getElementById("singleLightRate").textContent =
+  `発光率：${singleLightPercent}%`;
+const uraPercent = revengeSuccess > 0
+  ? (uraKeiyuki / revengeSuccess * 100).toFixed(1)
+  : "0.0";
+
+document.getElementById("uraRate").textContent =
+  `裏景之ST突入率：${uraPercent}%`;
   const selectedHints = Array.from(
   document.querySelectorAll(".hint:checked")
 ).map(input => input.value);
   document.getElementById("bellRate").textContent =
   "下段ベル確率： " +
-  (small > 0 ? "1/" + (games / small).toFixed(1) : "当選なし");
+  (small > 0 ? "1/" + (totalGames / small).toFixed(1) : "当選なし");
   document.getElementById("atRate").textContent =
   "AT初当たり確率： " +
   (at > 0 ? "1/" + (games / at).toFixed(1) : "当選なし");
@@ -82,12 +177,16 @@ const firstHit = bb;
 document.getElementById("bonusRate").textContent =
   "ボーナス初当たり確率： " +
   (firstHit > 0 ? "1/" + (games / firstHit).toFixed(1) : "当選なし");
-  const result = document.getElementById("result");
+const result = document.getElementById(
+  event.currentTarget.classList.contains("analyzeButton")
+    ? "topResult"
+    : "result"
+);
   if (
     games <= 0 ||
 ![games, small, bb, at].every(Number.isInteger) ||
 [small, bb, at].some(n => n < 0) ||
-small > games || bb > games || at > games
+small > totalGames || bb > games || at > games
 
 ) {
     result.textContent = "正しい数値を入力してください";
@@ -135,9 +234,17 @@ const scores = rates.map(([s, b, r, cz], i) => {
     mode === "bonus" ? bonusScore :
     (atScores[i] + bonusScore) / 2;
 
-  return hitScore +
-    logBinomial(games, small, bellRates[i]);
+const characterScore =
+  femaleCount * Math.log(femaleRates[i]) +
+  maleCount * Math.log(maleRates[i]);
+
+return hitScore +
+logBinomial(totalGames, small, bellRates[i])+
+ characterScore +
+logBinomial(revengeSuccess, uraKeiyuki, 1 / uraRates[i]) +
+2.5 * logBinomial(singleChance, singleLight, 1 / singleLightRates[i]);
 });
+
 const hintRules = {
   trophy2: [2, 3, 4, 5, 6],
   trophy3: [3, 4, 5, 6],
@@ -189,6 +296,87 @@ for (let i = 0; i < 6; i++) {
     result.appendChild(line);
   });
 };
+document.querySelectorAll(".analyzeButton, #analyzeButton").forEach(button => {
+  button.onclick = analyze;
+});
 </script>
+<style>
+  body {
+  background-color: #101c32;
+  color: #f3f8ff;
+  font-family: sans-serif;
+  padding: 16px;
+}
+
+h1, legend {
+  color: #a9d6ff;
+}
+
+fieldset {
+  background-color: #1d304d;
+}
+.analyzeButton, #analyzeButton {
+  background-color: #1671b9;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 10px 0;
+}
+#clearHints {
+  background-color: #536579;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#topResult:not(:empty),
+#result:not(:empty) {
+  background-color: #1d304d;
+  border: 1px solid #448ac0;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0 20px;
+}
+
+#topResult p,
+#result p {
+  padding: 8px 0;
+  margin: 0;
+  border-bottom: 1px solid #38516d;
+}
+
+#topResult p:last-child,
+#result p:last-child {
+  border-bottom: none;
+}
+  input[type="number"], select {
+    width: 100%;
+    max-width: 350px;
+    box-sizing: border-box;
+    padding: 12px;
+    margin: 6px 0 14px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+
+  fieldset {
+    margin: 20px 0;
+    padding: 16px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+  }
+
+  legend {
+    font-weight: bold;
+    padding: 0 8px;
+  }
+</style>
 
 
